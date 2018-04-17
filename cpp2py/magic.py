@@ -16,7 +16,7 @@ from IPython.paths import get_ipython_cache_dir
 
 __version__ = '0.3.0'
 
-from compiler import compile, print_out
+from .compiler import compile, print_out
 
 @magics_class
 class Cpp2pyMagics(Magics):
@@ -69,7 +69,7 @@ class Cpp2pyMagics(Magics):
 
         # import all object and function in the main namespace
         imported = []
-        for k, v in module.__dict__.items():
+        for k, v in list(module.__dict__.items()):
             if not k.startswith('_'):
                 self.shell.push({k: v})
                 imported.append(k)

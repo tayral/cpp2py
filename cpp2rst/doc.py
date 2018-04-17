@@ -47,12 +47,12 @@ The @ MUST BE THE LAST FIELDS
                 if item not in d:
                     d[item] = rest
                 else : 
-                    print "@%s is present more than once !"%item 
+                    print("@%s is present more than once !"%item) 
             elif item in var_multi:
                 value, comment = rest.split(' ',1)
                 d[item].append((value, comment))
             else:
-                print "@%s not recognized"%item
+                print("@%s not recognized"%item)
         for x in var_unique:
             if x not in d: d[x] = ''
         

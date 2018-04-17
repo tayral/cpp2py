@@ -2,9 +2,9 @@ import os, re, sys, itertools
 from collections import OrderedDict
 
 import cpp2py.clang_parser as CL
-import synopsis
-from doc import ProcessDoc
-from render_fnt import render_fnt, render_cls
+from . import synopsis
+from .doc import ProcessDoc
+from .render_fnt import render_fnt, render_cls
 
 def clean_end_white_char(s):
     """ remove the space at the end of the lines (for clean git diff...)"""
@@ -13,7 +13,7 @@ def clean_end_white_char(s):
 
 def safe_write(output_name, data):
     if '/' in output_name:
-        print "Skipping ", output_name
+        print("Skipping ", output_name)
         return
     with open("{output_name}.rst".format(output_name=output_name), "w") as f:
         f.write((clean_end_white_char(data)))
@@ -111,7 +111,7 @@ class Cpp2Rst:
 
     def run(self, output_directory):
 
-        print "Generating the documentation ..."
+        print("Generating the documentation ...")
         mkchdir(output_directory)
         classes = list(self.all_classes_gen())
 
@@ -122,10 +122,10 @@ class Cpp2Rst:
 
         for c in classes:
             if not c.spelling.strip() : 
-                print "Skipping a class with an empty name !"
+                print("Skipping a class with an empty name !")
                 continue
 
-            print " ... class :  " + c.spelling, CL.fully_qualified(c.referenced)
+            print(" ... class :  " + c.spelling, CL.fully_qualified(c.referenced))
 
             # process the doc of the class
             cls_doc = self.process_doc_class(c)
@@ -139,7 +139,7 @@ class Cpp2Rst:
             all_friend_functions = self.regroup_func_by_names(CL.get_friend_functions(c))
 
             # process the doc
-            doc_methods = dict ( (n, [self.process_doc_function(f) for f in fs]) for (n,fs) in (all_m.items() + all_friend_functions.items()))
+            doc_methods = dict ( (n, [self.process_doc_function(f) for f in fs]) for (n,fs) in (list(all_m.items()) + list(all_friend_functions.items())))
 
             # One directory for the class
             cur_dir = os.getcwd()
@@ -152,8 +152,8 @@ class Cpp2Rst:
             mkchdir(c.spelling)
 
             def render(mess, d) : 
-                for f_name, f_overloads in all_m.items():
-                    print " ...... %s %s"%(mess, f_name)               
+                for f_name, f_overloads in list(all_m.items()):
+                    print(" ...... %s %s"%(mess, f_name))               
                     r = render_fnt(doc_methods = doc_methods[f_name], parent_class = c, f_name = f_name, f_overloads = f_overloads)
                     safe_write(f_name, r)
 
@@ -164,17 +164,17 @@ class Cpp2Rst:
 
         all_functions = self.regroup_func_by_names(self.all_functions_gen())
 
-        docs = dict ( (n, [self.process_doc_function(f) for f in fs]) for (n,fs) in all_functions.items())
+        docs = dict ( (n, [self.process_doc_function(f) for f in fs]) for (n,fs) in list(all_functions.items()))
 
-        for f_name, f_overloads in all_functions.items():
-            print " ... function " + f_name
+        for f_name, f_overloads in list(all_functions.items()):
+            print(" ... function " + f_name)
             cur_dir = os.getcwd()
             mkchdir_for_one_class(f_overloads[0])
-            print " ..... located: ", f_overloads[0].location.file.name
+            print(" ..... located: ", f_overloads[0].location.file.name)
             r = render_fnt( doc_methods = docs[f_name], parent_class = None, f_name = f_name, f_overloads = f_overloads)
             safe_write(f_name, r)            
             os.chdir(cur_dir)
 
-        print "... done"
+        print("... done")
 
 

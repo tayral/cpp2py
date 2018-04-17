@@ -1,19 +1,19 @@
 # This module defines the function parse that
 # call libclang to parse a C++ file, and retrieve
 # A few helper functions for libclang
-import sys,re,os, itertools, platform
+import re,os, itertools, platform
 import clang.cindex
-from mako.template import Template
 from clang.cindex import CursorKind
-import libclang_config
+from mako.template import Template
+import cpp2py.libclang_config as libclang_config
 
 def pretty_print(x, keep= None, s='...') : 
-   print x
+   print(x)
    for y in x.get_children():
         if keep and not keep(y) : continue 
-        print s, y.spelling
-        print s, y.kind
-        print s, [z.spelling for z in y.get_tokens()]
+        print(s, y.spelling)
+        print(s, y.kind)
+        print(s, [z.spelling for z in y.get_tokens()])
         pretty_print(y, keep, s + '...')
 
 def decay(s) :
@@ -221,7 +221,7 @@ def get_friend_functions(node, keep = keep_all):
     """
     for c in node.get_children():
         if c.kind == CursorKind.FRIEND_DECL and keep(c): 
-            yield c.get_children().next()
+            yield next(c.get_children())
 
 #--------------------  print -----------------------------------
 
@@ -339,7 +339,7 @@ def parse(filename, compiler_options, includes, libclang_location, parse_all_com
     
     # Parse the file
     assert os.path.exists(filename), " File %s does not exist "%filename
-    print "Parsing the C++ file (may take a few seconds) ..."
+    print("Parsing the C++ file (may take a few seconds) ...")
     if skip_function_bodies:
         translation_unit = clang.cindex.TranslationUnit.from_source(filename, args =  ['-x', 'c++'] + compiler_options,
                                                                     options = clang.cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES)
@@ -353,8 +353,8 @@ def parse(filename, compiler_options, includes, libclang_location, parse_all_com
       for err in errors :
         loc = err.location
         s += '\n'.join([" file %s line %s col %s"%(loc.file, loc.line, loc.column), err.spelling])
-      raise RuntimeError, s + "\n... Your code must compile before using clang-parser !"
+      raise RuntimeError(s + "\n... Your code must compile before using clang-parser !")
 
-    print "... done. \n"
+    print("... done. \n")
     return translation_unit.cursor 
 

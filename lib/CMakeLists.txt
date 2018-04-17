@@ -19,7 +19,7 @@ set(ALLSOURCES signal_handler.cpp exceptions.cpp)
 
 #add_library(cpp2py-util ${ALLSOURCES})
 add_library(cpp2py ${ALLSOURCES})
-target_compile_options(cpp2py PRIVATE -std=c++14)
+target_compile_options(cpp2py PRIVATE -std=c++11)
 target_include_directories(cpp2py SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/include/cpp2py)
 #target_include_directories(cpp2py-util SYSTEM PRIVATE ${MPI_CXX_INCLUDE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../include/)
 #target_link_libraries(cpp2py-util ${MPI_CXX_LIBRARIES})

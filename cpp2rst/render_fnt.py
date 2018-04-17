@@ -1,7 +1,8 @@
 import cpp2py.clang_parser as CL
-from synopsis import make_synopsis_list, make_synopsis_template_decl
+from .synopsis import make_synopsis_list, make_synopsis_template_decl
 from cpp2py.doc import make_table, replace_latex
-from example import prepare_example
+from .example import prepare_example
+from functools import reduce
 
 # common tools for both rendering functions
 

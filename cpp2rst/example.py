@@ -10,7 +10,7 @@ def prepare_example(filename, decal):
     ls = open(filename).read().strip().split('\n')
     r = [i for i, l in enumerate(ls) if not (re.match(r"^\s*/?\*",l) or re.match("^\s*//",l))]
     s, e = r[0],r[-1]+1
-    assert r == range(s,e)
+    assert r == list(range(s,e))
     def cls(w) :
         w = re.sub(r"^\s*/?\*\s?/?",'',w)
         w = re.sub(r"^\s*//\s?",'',w)

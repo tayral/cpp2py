@@ -4,7 +4,7 @@
 
 import re
 import cpp2py.clang_parser as CL
-import util
+from . import util
 
 def replace_latex(s, escape_slash=False):
     """replace 
@@ -27,7 +27,7 @@ def replace_latex(s, escape_slash=False):
     #to create a hyperlink
     text=re.sub('\[\[([A-Za-z0-9{}\(,\)=./\/+-_]+)\]\]', r':ref:`\1`', text)
 
-    if escape_slash: text=text.encode('string_escape')
+    if escape_slash: text=text.encode('unicode_escape').decode('utf-8')
     return text
 
 def make_table(head_list, list_of_list):

@@ -3,6 +3,7 @@ import re
 import os
 from mako.template import Template
 import importlib
+import collections
 
 # the correspondance c type -> py_type
 c_to_py_type = {'void' : 'None', 'int' : 'int', 'long' : 'int', 'double' : "float", "std::string" : "str"}
@@ -129,7 +130,7 @@ class cfunction :
         if a[1] == '*' : a = [' '.join(a[:2])] + list(a[2:])
         if len(a) == 2 : (t,n),d = a,None
         elif len(a) == 3 : t,n,d = a
-        else : raise RuntimeError, "Syntax error in overload: args = %s"%args
+        else : raise RuntimeError("Syntax error in overload: args = %s"%args)
         self.args.append([t.strip(),n.strip(),d])
       # end analyze signature
 
@@ -211,7 +212,7 @@ class pure_pyfunction_from_module :
           f = getattr(m,name)
           self.doc = f.__doc__ # get the doc and check the function can be loaded.
       except :
-          print " I cannot import the function %s from the module %s"%(name,module)
+          print(" I cannot import the function %s from the module %s"%(name,module))
           raise
 
     def _generate_doc(self) :
@@ -252,7 +253,7 @@ class pyfunction :
       self.is_static = is_static  #
       self.doc = doc
       def analyse(f):
-          return python_function(f.__name__, f) if callable(f) else f
+          return python_function(f.__name__, f) if isinstance(f, collections.Callable) else f
       self.overloads = [] # List of all C++ overloads
       self.do_implement = True # in some cases, we do not want to implement it automatically, (special methods).
       self.is_constructor = False
@@ -627,11 +628,11 @@ class class_ :
            except :
                raise
            self.pure_python_methods[rename or name] = pure_pyfunction_from_module(name = name, module = module), 'module', process_doc(doc)
-        elif callable(f) :
+        elif isinstance(f, collections.Callable) :
            assert rename == None
            self.hidden_python_function[f.__name__] = f
            self.pure_python_methods[f.__name__] = f.__name__, 'inline', process_doc(f.__doc__)
-        else : raise ValueError, "argument f must be callable or a string"
+        else : raise ValueError("argument f must be callable or a string")
 
     class _member :
         def __init__(self, c_name, c_type, py_name, read_only, doc):
@@ -734,7 +735,7 @@ class class_ :
     def _prepare_for_generation(self) :
         """Internal :  Called just before the code generation"""
         self.has_mapping_protocol = '__getitem__impl' in self.methods or '__len__impl' in self.methods
-        if '__setitem__impl' in self.methods and not  '__getitem__impl' in self.methods : raise RuntimeError, "Cannot generate a class with a setter and no getter"
+        if '__setitem__impl' in self.methods and not  '__getitem__impl' in self.methods : raise RuntimeError("Cannot generate a class with a setter and no getter")
 
 class module_ :
     """
@@ -770,7 +771,7 @@ class module_ :
           Add a class into the module.
           It should not exist in the module already.
         """
-        if cls.py_type in self.classes : raise IndexError, "The class %s already exists"%cls.py_type
+        if cls.py_type in self.classes : raise IndexError("The class %s already exists"%cls.py_type)
         self.classes[cls.py_type] = cls
 
     def add_converter(self, conv):
@@ -778,7 +779,7 @@ class module_ :
           Add a converter into the module.
           It should not exist in the module already.
         """
-        if conv.c_type in self.converters : raise IndexError, "The class %s already exists"%conv.c_type
+        if conv.c_type in self.converters : raise IndexError("The class %s already exists"%conv.c_type)
         self.converters[conv.c_type] = conv
 
     def add_function(self, signature, name =None, calling_pattern = None,  doc = '', release_GIL_and_enable_signal = False):
@@ -830,7 +831,7 @@ class module_ :
         self.functions[name].overloads.append(f)
 
     def add_python_function(self, f, name = None, hidden = False) :
-        assert callable(f)
+        assert isinstance(f, collections.Callable)
         if not hidden :
             self.python_functions[name or f.__name__] = python_function(name or f.__name__, f)
         else :
@@ -878,9 +879,9 @@ class module_ :
         self.enums.append( self._enum(c_name, values, c_namespace, doc))
 
     def _all_args_kw_functions(self) :
-        l = [ (f, self.name, None) for f in self.functions.values()]
-        for c in self.classes.values() :
-            l += [(m,c.py_type, c.c_type) for m in c.methods.values() if m.do_implement]
+        l = [ (f, self.name, None) for f in list(self.functions.values())]
+        for c in list(self.classes.values()) :
+            l += [(m,c.py_type, c.c_type) for m in list(c.methods.values()) if m.do_implement]
             if c.constructor :
                 l.append( (c.constructor,c.py_type, c.c_type))
         # Check before generation
@@ -904,8 +905,8 @@ class module_ :
         wrap_file = sys.argv[1]
  
         # prepare generation
-        for c in self.classes.values() : c._prepare_for_generation()
-        for n,f in class_.hidden_python_function.items() : self.add_python_function(f,name = n, hidden=True)
+        for c in list(self.classes.values()) : c._prepare_for_generation()
+        for n,f in list(class_.hidden_python_function.items()) : self.add_python_function(f,name = n, hidden=True)
            
         # call mako
         tpl = Template(filename=mako_template, strict_undefined=True)

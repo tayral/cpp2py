@@ -5,7 +5,7 @@ cxx_compiler = Config.CXX_COMPILER
 
 def print_out (m, out) : 
    l = (70 - len(m))/2
-   print l*'-' + m + l*'-' + '\n' + out 
+   print(l*'-' + m + l*'-' + '\n' + out) 
 
 def execute(command, message):
     #print "EXEC", command
@@ -13,7 +13,7 @@ def execute(command, message):
        out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
     except subprocess.CalledProcessError as E :
        print_out (message + " error ", E.output)
-       raise RuntimeError, "Error"
+       raise RuntimeError("Error")
     #if verbosity>0: 
     #print_out(message, out)
     #print message
@@ -23,7 +23,7 @@ def compile(code, verbosity =0, only=(), modules = '', cxxflags= '', moduledir =
     Takes the c++ code, call c++2py on it and compile the whole thing into a module.
     """
     # Add standard
-    cxxflags = "  -std=c++14 " + cxxflags
+    cxxflags = "  -std=c++11 " + cxxflags
     
     modules = modules.strip().split(' ')
     #print modules
