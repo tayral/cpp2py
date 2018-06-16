@@ -13,6 +13,8 @@ include(FindPackageHandleStandardArgs)
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
   SET(TRIAL_LIBRARY_PATHS
+   /usr/local/Cellar/llvm/6.0.0/lib/
+   /usr/local/Cellar/llvm/5.0.1/lib/
    /usr/local/lib/
    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
   )
@@ -20,7 +22,7 @@ if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    FIND_LIBRARY(LIBCLANG_LOCATION NAMES libclang.dylib PATHS ${TRIAL_LIBRARY_PATHS} DOC "Location of the libclang library")
    #endif()
  
-  set(LIBCLANG_CXX_ADDITIONAL_FLAGS "" CACHE STRING "Additional flags to be passed to libclang when parsing with clang")
+  set(LIBCLANG_CXX_FLAGS "" CACHE STRING "Additional flags to be passed to libclang when parsing with clang")
 
   set(CLANG_COMPILER "clang++")
   set(CLANG_OPT -stdlib=libc++ )
@@ -32,6 +34,7 @@ SET(TRIAL_LIBRARY_PATHS
  ENV LD_INCLUDE_PATH
  /usr/lib 
  /usr/lib/x86_64-linux-gnu
+ /usr/lib/llvm-6.0/lib
  /usr/lib/llvm-5.0/lib
  /usr/lib/llvm-4.0/lib
  /usr/lib64/llvm
@@ -40,8 +43,8 @@ if (NOT LIBCLANG_LOCATION)
 FIND_LIBRARY(LIBCLANG_LOCATION NAMES libclang.so PATHS ${TRIAL_LIBRARY_PATHS} DOC "Location of the libclang library")
 endif()
 
-SET(LIBCLANG_CXX_ADDITIONAL_FLAGS "${LIBCLANG_CXX_ADDITIONAL_FLAGS}")
-#SET(LIBCLANG_CXX_ADDITIONAL_FLAGS "-DADD_MAX_ALIGN_T_WORKAROUND ${LIBCLANG_CXX_ADDITIONAL_FLAGS}")
+SET(LIBCLANG_CXX_FLAGS "${LIBCLANG_CXX_FLAGS}")
+#SET(LIBCLANG_CXX_FLAGS "-DADD_MAX_ALIGN_T_WORKAROUND ${LIBCLANG_CXX_FLAGS}")
 
 # Now find the clang compiler ....
 if (NOT CLANG_COMPILER) 
@@ -49,7 +52,7 @@ if (NOT CLANG_COMPILER)
   ENV PATH
   /usr/bin 
  )
-FIND_PROGRAM(CLANG_COMPILER names clang++ clang++-5.0 clang++-4.0 PATHS ${TRIAL_CLANG_PATHS} DOC "Clang compiler (for libclang option)")
+FIND_PROGRAM(CLANG_COMPILER names clang++ clang++-6.0 clang++-5.0 clang++-4.0 PATHS ${TRIAL_CLANG_PATHS} DOC "Clang compiler (for libclang option)")
 endif()
 
 if (NOT CLANG_COMPILER)
@@ -58,6 +61,7 @@ endif()
 
 endif( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
+if (NOT LIBCLANG_CXX_FLAGS)
 if (CLANG_COMPILER)
 SET(LIBCLANG_FLAGS_DETECTION_COMMAND "${CLANG_COMPILER}" -E -x c++ ${CLANG_OPT} -v -)
 EXECUTE_PROCESS(COMMAND ${LIBCLANG_FLAGS_DETECTION_COMMAND}
@@ -70,9 +74,9 @@ STRING(REPLACE "(framework directory)" "" CMAKE_MATCH_1 ${CMAKE_MATCH_1})
 separate_arguments(CMAKE_MATCH_1)
 FOREACH(include_path IN ITEMS ${CMAKE_MATCH_1})
  STRING(STRIP ${include_path} include_path)
- SET(LIBCLANG_CXX_ADDITIONAL_FLAGS "${LIBCLANG_CXX_ADDITIONAL_FLAGS} -I${include_path}")
+ SET(LIBCLANG_CXX_FLAGS "${LIBCLANG_CXX_FLAGS} -I${include_path}")
 ENDFOREACH(include_path IN ITEMS ${CMAKE_MATCH_1})
 endif (CLANG_COMPILER)
-
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibClang DEFAULT_MSG LIBCLANG_LOCATION LIBCLANG_CXX_ADDITIONAL_FLAGS)
+endif()
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibClang DEFAULT_MSG LIBCLANG_LOCATION LIBCLANG_CXX_FLAGS)
 
