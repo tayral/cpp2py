@@ -1,4 +1,16 @@
-set (CPP2PY_VERSION "1.5")
+cmake_minimum_required(VERSION 2.8.12)
+project(cpp2py C CXX)
+include(CheckIncludeFile)
+include(CheckIncludeFileCXX)
+
+# Default to Release build type
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Type of build" FORCE)
+endif()
+message( STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} -------------")
+
+# shared library. no option, use shared.
+set(BUILD_SHARED_LIBS ON)
 
 # Check CMAKE_INSTALL_PREFIX : must be provided and absolute
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR (NOT IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX}))
@@ -6,45 +18,44 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR (NOT IS_ABSOLUTE ${CMAKE_INSTA
 endif()
 message(STATUS "Installation directory will be ${CMAKE_INSTALL_PREFIX}")
 
-cmake_minimum_required(VERSION 2.8.7)
-project(AllCpp2xx C CXX)
-include(CheckIncludeFile)
-include(CheckIncludeFileCXX)
-
-# shared library. no option, use shared.
-set(BUILD_SHARED_LIBS ON)
-#option(BUILD_SHARED_LIBS "Build shared libraries" ON)
-
-# Release, Debug
-if(NOT CMAKE_BUILD_TYPE)
- set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Type of build" FORCE)
- mark_as_advanced(CMAKE_BUILD_TYPE)
-endif(NOT CMAKE_BUILD_TYPE)
-message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
-
 # add ./cmake to the path for module
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake) 
 
 # log info
-message( STATUS "-------- git and hash detection -------------")
+message( STATUS "-------- cpp2py version and git hash detection -------------")
 
 find_package(Git) 
+
+# Get the version number from the latest annotated git tag
+execute_process(COMMAND bash "-c" "${GIT_EXECUTABLE} describe | sed \"s/-\\([0-9]*\\)-.*/.\\1/g\""
+ WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+ OUTPUT_VARIABLE   CPP2PY_VERSION
+ OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(NOT CPP2PY_VERSION)
+  set(CPP2PY_VERSION 1.5)
+endif()
+
+# Get the Git Hash
 execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
- OUTPUT_VARIABLE   GIT_HASH
+ OUTPUT_VARIABLE   CPP2PY_GIT_HASH
  OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# LIBCLANG : try to set LIBCLANG_LOCATION and LIBCLANG_CXX_ADDITIONAL_FLAGS automatically
+message(STATUS "Cpp2py version : ${CPP2PY_VERSION}")
+message(STATUS "Git hash : ${CPP2PY_GIT_HASH}")
+
+# LIBCLANG : try to set LIBCLANG_LOCATION and LIBCLANG_CXX_FLAGS automatically
 MESSAGE(STATUS "-------- LibClang detection -------------")
 
 find_package(LibClang)
 
 MESSAGE(STATUS "LibClang location: ${LIBCLANG_LOCATION}")
-MESSAGE(STATUS "LibClang additional flags: ${LIBCLANG_CXX_ADDITIONAL_FLAGS}")
+MESSAGE(STATUS "LibClang additional flags: ${LIBCLANG_CXX_FLAGS}")
 
 # allow user to modify
-set(LIBCLANG_CXX_ADDITIONAL_FLAGS "${LIBCLANG_CXX_ADDITIONAL_FLAGS}" CACHE STRING "Additional flags to be passed to libclang when parsing with clang")
+set(LIBCLANG_CXX_FLAGS "${LIBCLANG_CXX_FLAGS}" CACHE STRING "Additional flags to be passed to libclang when parsing with clang")
 set(LIBCLANG_LOCATION "${LIBCLANG_LOCATION}" CACHE STRING "Location of the libclang library")
 
 # Detect Python
@@ -94,3 +105,21 @@ MESSAGE(STATUS "***************************************************************"
 #--------------------------------------------------------
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cpp2py.modulefile.in ${CMAKE_CURRENT_BINARY_DIR}/cpp2py.modulefile @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cpp2py.modulefile DESTINATION ${CMAKE_INSTALL_PREFIX}/share)
+
+#--------------------------------------------------------
+# Packaging
+#--------------------------------------------------------
+option(BUILD_DEBIAN_PACKAGE "Build a deb package" OFF)
+if(BUILD_DEBIAN_PACKAGE)
+  if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/usr")
+    message(FATAL_ERROR "CMAKE_INSTALL_PREFIX must be /usr for packaging")
+  endif()
+  set(CPACK_GENERATOR "DEB")
+  set(CPACK_PACKAGE_VERSION ${CPP2PY_VERSION})
+  set(CPACK_PACKAGE_CONTACT "https://github.com/TRIQS/cpp2py")
+  execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "python, python-mako, python-numpy, python-h5py, python-scipy")
+  SET(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+  SET(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)
+  include(CPack)
+endif()

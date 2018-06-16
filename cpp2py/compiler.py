@@ -1,4 +1,4 @@
-import imp, os, sys, subprocess, hashlib, re, tempfile
+import imp, os, sys, shutil, subprocess, hashlib, re, tempfile
 import libclang_config as Config
 
 cxx_compiler = Config.CXX_COMPILER
@@ -18,12 +18,13 @@ def execute(command, message):
     #print_out(message, out)
     #print message
 
-def compile(code, verbosity =0, only=(), modules = '', cxxflags= '', moduledir = '/tmp', recompile = False):
+def compile(code, verbosity =0, only=(), modules = '', cxxflags= '', moduledir = '/tmp', recompile = False, no_clean = False):
     """
     Takes the c++ code, call c++2py on it and compile the whole thing into a module.
     """
-    # Add standard
-    cxxflags = "  -std=c++11 " + cxxflags
+    # Additional Compiler Flags
+    if os.getenv('CXXFLAGS'): cxxflags = os.getenv('CXXFLAGS') + cxxflags
+    cxxflags = " -std=c++17 " + cxxflags
     
     modules = modules.strip().split(' ')
     #print modules
@@ -86,6 +87,9 @@ def compile(code, verbosity =0, only=(), modules = '', cxxflags= '', moduledir =
             execute ("make -j2  ", "make")
      
             #print "Done"
+        except: # we clean if fail
+            os.chdir(old_cwd)
+            if not no_clean : shutil.rmtree(module_dirname)
 
         finally:
             os.chdir(old_cwd)
